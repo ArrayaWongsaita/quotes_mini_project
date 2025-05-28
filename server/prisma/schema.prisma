@@ -1,0 +1,82 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// โมเดลสำหรับเก็บข้อมูลผู้ใช้งานในระบบ
+model User {
+  id            String         @id @default(uuid()) @map("id")
+  email         String         @unique @map("email")
+  password      String         @map("password")
+  name          String?        @map("name")
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+  refreshTokens RefreshToken[]
+  Quote         Quote[]
+  Vote          Vote[]
+
+  @@map("user")
+}
+
+// โมเดลสำหรับเก็บ refresh token เพื่อการยืนยันตัวตนแบบต่อเนื่อง
+model RefreshToken {
+  id        String   @id @default(uuid()) @map("id")
+  token     String   @unique @map("token")
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("refresh_token")
+}
+
+// โมเดลสำหรับเก็บข้อมูลคำคมต่างๆ ที่ผู้ใช้เพิ่มเข้ามาในระบบ
+model Quote {
+  id            String   @id @default(uuid()) @map("id")
+  content       String   @map("content") // ข้อความคำคม
+  author        String?  @map("author") // ชื่อผู้แต่งหรือผู้พูดคำคม
+  upVoteCount   Int      @default(0) @map("up_vote_count") // จำนวนโหวตบวกสำหรับการค้นหาอย่างรวดเร็ว
+  downVoteCount Int      @default(0) @map("down_vote_count") // จำนวนโหวตลบสำหรับการค้นหาอย่างรวดเร็ว
+  userId        String   @map("user_id") // รหัสผู้ใช้ที่เพิ่มคำคมนี้
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  votes         Vote[] // ความสัมพันธ์กับโหวตทั้งหมดที่เกี่ยวข้องกับคำคมนี้
+  tags          Tag[] // แก้ไขตรงนี้ เปลี่ยนจาก QuoteTag[] เป็น Tag[]
+
+  @@index([author]) // เพิ่มดัชนีสำหรับการค้นหาตามผู้แต่ง
+  @@map("quote")
+}
+
+// โมเดลสำหรับเก็บข้อมูลการโหวตของผู้ใช้ที่มีต่อคำคม
+model Vote {
+  id        String   @id @default(uuid()) @map("id")
+  value     Int      @map("value") // 1 สำหรับโหวตบวก, -1 สำหรับโหวตลบ
+  quoteId   String   @map("quote_id")
+  quote     Quote    @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // ให้แน่ใจว่าผู้ใช้แต่ละคนสามารถโหวตคำคมแต่ละอันได้เพียงครั้งเดียว
+  @@unique([quoteId, userId])
+  @@map("vote")
+}
+
+// โมเดลสำหรับเก็บข้อมูลแท็กที่ใช้จัดหมวดหมู่คำคม
+model Tag {
+  id        String   @id @default(uuid()) @map("id")
+  name      String   @unique @map("name")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  quotes    Quote[] // แก้ไขตรงนี้ เปลี่ยนจาก QuoteTag[] เป็น Quote[]
+
+  @@map("tag")
+}
+
+// ลบโมเดล QuoteTag ออก Prisma จะสร้างตารางเชื่อมโยงให้เอง
