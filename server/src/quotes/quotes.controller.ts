@@ -29,6 +29,7 @@ import { PaginatedQuotesResponse } from './models/paginated-quotes-response.mode
 import { UpdateQuoteDto } from './dto/update-quote.dto';
 import { UpdateQuoteUseCase } from './use-cases/update-quote.use-case';
 import { DeleteQuoteUseCase } from './use-cases/delete-quote.use-case';
+import { FindQuoteByIdUseCase } from './use-cases/find-quote-by-id.use-case';
 
 @ApiTags('quotes')
 @Controller('quotes')
@@ -36,6 +37,7 @@ export class QuotesController {
   constructor(
     private readonly createQuoteUseCase: CreateQuoteUseCase,
     private readonly findQuotesUseCase: FindQuotesUseCase,
+    private readonly findQuoteByIdUseCase: FindQuoteByIdUseCase,
     private readonly updateQuoteUseCase: UpdateQuoteUseCase,
     private readonly deleteQuoteUseCase: DeleteQuoteUseCase,
   ) {}
@@ -82,6 +84,32 @@ export class QuotesController {
 
     // ส่ง userId ไปยัง use case และส่งผลลัพธ์กลับโดยตรง
     return await this.findQuotesUseCase.execute(findQuotesDto, currentUserId);
+  }
+
+  @ApiOperation({ summary: 'ค้นหาคำคมตาม ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'คำคมที่มี ID ที่ระบุ',
+    type: QuoteResponse,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'ไม่พบคำคมที่มี ID ที่ระบุ',
+  })
+  @ApiUnauthorizedResponse({ description: 'ไม่ได้รับอนุญาต' })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Get(':id')
+  async findById(
+    @Param('id') id: string,
+    @Request() req,
+  ): Promise<QuoteResponse> {
+    const currentUserId = req.user?.id as string | undefined;
+    if (currentUserId && typeof currentUserId !== 'string') {
+      throw new Error('Current user ID must be a string');
+    }
+
+    return await this.findQuoteByIdUseCase.execute(id, currentUserId);
   }
 
   @ApiOperation({ summary: 'อัปเดตคำคม' })

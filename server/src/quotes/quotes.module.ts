@@ -5,6 +5,7 @@ import { CreateQuoteUseCase } from './use-cases/create-quote.use-case';
 import { FindQuotesUseCase } from './use-cases/find-quotes.use-case';
 import { UpdateQuoteUseCase } from './use-cases/update-quote.use-case';
 import { DeleteQuoteUseCase } from './use-cases/delete-quote.use-case';
+import { FindQuoteByIdUseCase } from './use-cases/find-quote-by-id.use-case';
 
 @Module({
   imports: [PrismaModule],
@@ -12,12 +13,14 @@ import { DeleteQuoteUseCase } from './use-cases/delete-quote.use-case';
   providers: [
     CreateQuoteUseCase,
     FindQuotesUseCase,
+    FindQuoteByIdUseCase,
     UpdateQuoteUseCase,
     DeleteQuoteUseCase,
   ],
   exports: [
     CreateQuoteUseCase,
     FindQuotesUseCase,
+    FindQuoteByIdUseCase,
     UpdateQuoteUseCase,
     DeleteQuoteUseCase,
   ],

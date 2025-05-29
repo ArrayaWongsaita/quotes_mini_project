@@ -50,9 +50,8 @@ export class FindQuotesUseCase {
     };
 
     // ต้องแน่ใจว่า skip และ limit เป็นตัวเลข
-    // กำหนดค่าเริ่มต้นสำหรับ skip กรณีที่ dto.skip เป็น undefined
     const take = Number(dto.limit) || 10;
-    const skip = typeof dto.skip === 'number' ? Number(dto.skip) : 0;
+    const skip = Number(dto.page) > 1 ? (Number(dto.page) - 1) * take : 0;
 
     // คำนวณจำนวนรายการทั้งหมด
     const totalItems = await this.prisma.quote.count({ where });

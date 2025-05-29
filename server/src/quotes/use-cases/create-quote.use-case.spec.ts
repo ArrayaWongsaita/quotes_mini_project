@@ -71,6 +71,7 @@ describe('CreateQuoteUseCase', () => {
     // Act
     const result = await useCase.execute(
       mockCreateQuoteDto,
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
       mockUserId as string,
     );
 
