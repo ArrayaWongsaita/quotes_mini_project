@@ -7,13 +7,16 @@ import { Session } from 'next-auth';
 
 async function refreshAccessToken(token: JWT): Promise<JWT> {
   try {
-    const response = await fetch('http://localhost:4000/auth/refresh', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        refreshToken: token.refreshToken,
-      }),
-    });
+    const response = await fetch(
+      process.env.NEXT_PUBLIC_API_URL + '/auth/refresh',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          refreshToken: token.refreshToken,
+        }),
+      }
+    );
 
     const refreshedTokens = await response.json();
 
