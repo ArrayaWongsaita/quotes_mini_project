@@ -11,6 +11,7 @@ import QuoteSearch from '@/components/quotes/QuoteSearch';
 import Pagination from '@/components/quotes/Pagination';
 import QuoteFilters from '@/components/quotes/QuoteFilters';
 import { Quote, Tag, QuoteResponse } from '@/types/quote';
+import { ConfirmationModal } from '@/components/ui/confirmation-modal';
 
 export default function Quotes() {
   const { data: session } = useSession();
@@ -20,13 +21,17 @@ export default function Quotes() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedTag, setSelectedTag] = useState<string | null>(null); // Now stores tag name instead of ID
-  // We're collecting tags but not using them yet - will be used for a future feature
+  const [selectedTag, setSelectedTag] = useState<string | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [_tags, setTags] = useState<Tag[]>([]);
   const [sortBy, setSortBy] = useState<string>('createdAt');
   const [sortOrder, setSortOrder] = useState<string>('desc');
   const [authorFilter, setAuthorFilter] = useState<string>('');
+
+  // Add state for delete confirmation
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [quoteToDelete, setQuoteToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Fetch quotes from the API
   const fetchQuotes = useCallback(
@@ -215,6 +220,41 @@ export default function Quotes() {
     }
   }, [selectedTag]);
 
+  // Add a new function to handle quote deletion
+  const handleDeleteQuote = useCallback((quoteId: string) => {
+    setQuoteToDelete(quoteId);
+    setDeleteModalOpen(true);
+  }, []);
+
+  // Add a function to perform the actual deletion
+  const confirmDeleteQuote = useCallback(async () => {
+    if (!quoteToDelete) return;
+
+    setIsDeleting(true);
+    try {
+      await api.delete(`/quotes/${quoteToDelete}`);
+
+      // Remove the quote from state
+      setQuotes((current) => current.filter((q) => q.id !== quoteToDelete));
+      toast.success('Quote deleted successfully');
+
+      // If we deleted the last quote on the page and it's not the first page, go back one page
+      if (quotes.length === 1 && page > 1) {
+        handlePageChange(page - 1);
+      } else if (quotes.length === 1) {
+        // If it's the last quote on the first page, just refresh
+        fetchQuotes(page);
+      }
+    } catch (err) {
+      console.error('Failed to delete quote:', err);
+      toast.error('Failed to delete quote');
+    } finally {
+      setIsDeleting(false);
+      setDeleteModalOpen(false);
+      setQuoteToDelete(null);
+    }
+  }, [quoteToDelete, quotes.length, page, handlePageChange, fetchQuotes]);
+
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] p-4">
@@ -285,6 +325,7 @@ export default function Quotes() {
               quote={quote}
               onVote={handleVote}
               onTagClick={handleTagFilter}
+              onDelete={handleDeleteQuote}
             />
           ))}
         </div>
@@ -308,6 +349,19 @@ export default function Quotes() {
         totalPages={totalPages}
         setPage={setPage}
         fetchQuotes={handlePageChange} // Use the new handler
+      />
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        onConfirm={confirmDeleteQuote}
+        title="Delete Quote"
+        description="Are you sure you want to delete this quote? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        isLoading={isDeleting}
+        variant="destructive"
       />
     </div>
   );
